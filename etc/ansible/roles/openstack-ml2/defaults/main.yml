@@ -1,6 +1,6 @@
 ---
-# defaults file for openstack-ml2
-#
+# params to impliment trunking
+trunked_vlans: "{{ trunked_vlans }}"
 
 # params to implement ml2 network resource
 #
