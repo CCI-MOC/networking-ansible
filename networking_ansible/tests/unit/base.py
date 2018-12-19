@@ -51,6 +51,7 @@ class NetworkingAnsibleTestCase(test_plugin.Ml2PluginV2TestCase):
             self.mech = mech_driver.AnsibleMechanismDriver()
             self.mech.initialize()
         self.testsegid = '37'
+        self.testsegids = [73, 7, 3]
         self.testport = 'switchportid'
         self.empty_inventory = {'all': {'hosts': {}}}
 

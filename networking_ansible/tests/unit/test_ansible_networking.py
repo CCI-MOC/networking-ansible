@@ -148,3 +148,30 @@ class TestVlanAccessPort(base.NetworkingAnsibleTestCase):
                           'remove',
                           self.mock_port_context.current,
                           self.mock_net_context.current)
+
+
+@mock.patch('networking_ansible.ansible_networking'
+            '.AnsibleNetworking._run_task')
+class TestConfTrunkPort(base.NetworkingAnsibleTestCase):
+
+    def test_assign_trunk_port(self, m_run_task):
+        self.mech.ansnet.conf_trunk_port(self.testhost,
+                                         self.testport,
+                                         self.testsegid,
+                                         trunked_vlans=self.testsegids)
+
+        m_run_task.assert_called_once()
+
+    def test_remove_trunk_port(self, m_run_task):
+        self.mech.ansnet.vlan_access_port('remove',
+                                          self.mock_port_context.current,
+                                          self.mock_net_context.current)
+
+        m_run_task.assert_called_once()
+
+    def test_remove_trunk_port_raises(self, m_run_task):
+        m_run_task.side_effect = exceptions.AnsibleRunnerException('test')
+        self.assertRaises(exceptions.AnsibleRunnerException,
+                          self.mech.ansnet.vlan_access_port, 'remove',
+                          self.mock_port_context.current,
+                          self.mock_net_context.current)
