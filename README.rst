@@ -35,6 +35,5 @@ Ironic provisioning network and the tenant VLAN that the guest is assigned.
 
 Features
 --------
-
 * On create network a vlan can be defined
-* On port update will assign a vlan to an access port
+* On port update will assign a vlan to an access port or trunk port.
