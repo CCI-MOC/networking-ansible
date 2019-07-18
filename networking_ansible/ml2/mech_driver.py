@@ -16,12 +16,14 @@
 from neutron.db import provisioning_blocks
 from neutron.plugins.ml2.common import exceptions as ml2_exc
 from neutron_lib.api.definitions import portbindings
+from neutron_lib.api.definitions import trunk_details
 from neutron_lib.callbacks import resources
 from neutron_lib.plugins.ml2 import api
 from oslo_log import log as logging
 
 from networking_ansible import ansible_networking
 from networking_ansible import config
+from networking_ansible import exceptions
 
 LOG = logging.getLogger(__name__)
 
@@ -214,6 +216,8 @@ class AnsibleMechanismDriver(api.MechanismDriver):
             # TODO(radez) log debug messages here
             return
 
+        segments = context.segments_to_bind
+
         switch_mac = local_link_info[0].get('switch_id', '').upper()
         switch_name = local_link_info[0].get('switch_info')
         switch_port = local_link_info[0].get('port_id')
@@ -228,24 +232,59 @@ class AnsibleMechanismDriver(api.MechanismDriver):
         segmentation_id = network['provider:segmentation_id'] or '1'
         segments = context.segments_to_bind
 
+        LOG.debug('Plugging in port {switch_port} on '
+                  '{switch_name} to vlan: {segmentation_id}'.format(
+                      switch_port=switch_port,
+                      switch_name=switch_name,
+                      segmentation_id=segmentation_id))
+
         provisioning_blocks.add_provisioning_component(
             context._plugin_context, port['id'], resources.PORT,
             ANSIBLE_NETWORKING_ENTITY)
+
         LOG.debug("Putting port {port} on {switch_name} to vlan: "
                   "{segmentation_id}".format(
                       port=switch_port,
                       switch_name=switch_name,
                       segmentation_id=segmentation_id))
+
         # Assign port to network
-        self.ansnet.vlan_access_port('assign', context.current,
-                                     context.network.current)
-        LOG.info("Successfully bound port {port_id} in segment "
-                 "{segment_id} on host {host}".format(
-                     port_id=port['id'],
-                     host=switch_name,
-                     segment_id=segmentation_id))
-        context.set_binding(segments[0][api.ID],
-                            portbindings.VIF_TYPE_OTHER, {})
+        try:
+            if trunk_details.TRUNK_DETAILS in port:
+                sub_ports = port[trunk_details.TRUNK_DETAILS]['sub_ports']
+                trunked_vlans = [sp['segmentation_id'] for sp in sub_ports]
+                self.ansnet.conf_trunk_port(switch_name, switch_port,
+                                            segmentation_id, trunked_vlans)
+            else:
+                self.ansnet.vlan_access_port(switch_name,
+                                             switch_port,
+                                             segmentation_id)
+            context.set_binding(segments[0][api.ID],
+                                portbindings.VIF_TYPE_OTHER, {})
+            LOG.info('Port {neutron_port} has been plugged into '
+                     'network {net_id} on device {switch_name}'.format(
+                         neutron_port=port['id'],
+                         net_id=network['id'],
+                         switch_name=switch_name))
+        except Exception as e:
+            LOG.error('Failed to plug in port {neutron_port} on '
+                      'device: {switch_name} from network {net_id} '
+                      'reason: {exc}'.format(
+                          neutron_port=port['id'],
+                          net_id=network['id'],
+                          switch_name=switch_name,
+                          exc=e))
+            raise ml2_exc.MechanismDriverError(e)
+
+    def _link_info_from_port(self, port, network=None):
+        network = network or {}
+        # Validate port and local link info
+        local_link_info = port['binding:profile'].get('local_link_information')
+        if not local_link_info:
+            msg = 'local_link_information is missing in port {port_id} ' \
+                  'binding:profile'.format(port_id=port['id'])
+            LOG.debug(msg)
+            raise exceptions.LocalLinkInfoMissingException(msg)
 
     @staticmethod
     def _is_port_supported(port):

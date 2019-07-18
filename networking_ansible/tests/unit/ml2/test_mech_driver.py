@@ -13,11 +13,34 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import fixtures
 import mock
 
+from neutron.common import test_lib
 from neutron.plugins.ml2.common import exceptions as ml2_exc
+# from neutron.tests.unit.plugins.ml2 import test_plugin
+# from neutron_lib.api.definitions import portbindings
+# from neutron_lib.api.definitions import provider_net
+from neutron_lib.api.definitions import trunk_details
+# import webob.exc
 
+from networking_ansible import ansible_networking
+# from networking_ansible import exceptions
+# from networking_ansible.ml2 import exceptions as netans_ml2exc
 from networking_ansible.tests.unit import base
+
+
+class TestLibTestConfigFixture(fixtures.Fixture):
+    def __init__(self):
+        self._original_test_config = None
+
+    def _setUp(self):
+        self.addCleanup(self._restore)
+        self._original_test_config = test_lib.test_config.copy()
+
+    def _restore(self):
+        if self._original_test_config is not None:
+            test_lib.test_config = self._original_test_config
 
 
 @mock.patch('networking_ansible.ansible_networking.'
@@ -57,6 +80,19 @@ class TestBindPort(base.NetworkingAnsibleTestCase):
         del self.mock_port_context.current[bind_prof][local_link_info]
         self.mech.bind_port(self.mock_port_context)
         mock_vlan_access_port.assert_not_called()
+
+    @mock.patch.object(ansible_networking.AnsibleNetworking, 'conf_trunk_port')
+    def test_bind_port_trunk_port(self,
+                                  mock_conf_trunk_port,
+                                  mock_prov_blks,
+                                  mock_update_access_port):
+        td = {'sub_ports': [{'segmentation_id': self.testsegid2}]}
+        self.mock_port_context.current[trunk_details.TRUNK_DETAILS] = td
+        self.mech.bind_port(self.mock_port_context)
+        mock_conf_trunk_port.assert_called_once_with(self.testhost,
+                                                     self.testport,
+                                                     self.testsegid,
+                                                     [self.testsegid2])
 
 
 class TestIsPortSupported(base.NetworkingAnsibleTestCase):
