@@ -51,6 +51,7 @@ class NetworkingAnsibleTestCase(test_plugin.Ml2PluginV2TestCase):
             self.mech = mech_driver.AnsibleMechanismDriver()
             self.mech.initialize()
         self.testsegid = '37'
+        self.testsegid2 = '73'
         self.testsegids = [73, 7, 3]
         self.testport = 'switchportid'
         self.empty_inventory = {'all': {'hosts': {}}}
@@ -62,7 +63,8 @@ class NetworkingAnsibleTestCase(test_plugin.Ml2PluginV2TestCase):
             'id': 37,
             'provider:network_type': 'vlan',
             'provider:segmentation_id': self.testsegid,
-            'provider:physical_network': 'physnet'}
+            'provider:physical_network': 'physnet',
+        }
 
         # define mocked port context
         self.mock_port_context = mock.create_autospec(
