@@ -256,9 +256,8 @@ class AnsibleMechanismDriver(api.MechanismDriver):
                 self.ansnet.conf_trunk_port(switch_name, switch_port,
                                             segmentation_id, trunked_vlans)
             else:
-                self.ansnet.vlan_access_port(switch_name,
-                                             switch_port,
-                                             segmentation_id)
+                self.ansnet.vlan_access_port('assign', context.current,
+                                             context.network.current)
             context.set_binding(segments[0][api.ID],
                                 portbindings.VIF_TYPE_OTHER, {})
             LOG.info('Port {neutron_port} has been plugged into '
