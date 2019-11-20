@@ -172,5 +172,6 @@ class AnsibleNetworking(object):
                               addition to the default VLAN.
         """
         return self._run_task('conf_trunk_port',
-                              hostname, port, vlan_id,
+                              hostname, vlan_id,
+                              switch_port=port,
                               trunked_vlans=trunked_vlans)
