@@ -16,4 +16,4 @@
 - name: include and run device provider specific tasks
   include_tasks: run.yaml
   vars:
-    network_action: conf_trunk_port
+    ml2_resource: conf_trunk_port
