@@ -52,7 +52,10 @@ class TestBindPort(base.NetworkingAnsibleTestCase):
                                    mock_prov_blks,
                                    mock_vlan_access_port):
         self.mech.bind_port(self.mock_port_context)
-        mock_vlan_access_port.assert_called_once()
+        mock_vlan_access_port.assert_called_once_with(
+            'assign',
+            self.mock_port_context.current,
+            self.mock_port_context.network.current)
 
     def test_bind_port_mac_no_info_local_link_info(self,
                                                    mock_prov_blks,
