@@ -19,6 +19,7 @@ from oslo_log import log as logging
 from networking_ansible import exceptions
 
 LOG = logging.getLogger(__name__)
+TRUNK_TASK = 'conf_trunk_port'
 
 
 class AnsibleNetworking(object):
@@ -77,7 +78,8 @@ class AnsibleNetworking(object):
                 }
             }]
         }]
-        if trunked_vlans:
+
+        if task == TRUNK_TASK:
             playbook[0]['tasks'][0]['vars']['trunked_vlans'] = trunked_vlans
         if switch_port:
             playbook[0]['tasks'][0]['vars']['port_name'] = switch_port
@@ -171,7 +173,7 @@ class AnsibleNetworking(object):
         :param trunked_vlans: A list of VLAN IDs to add to the port in
                               addition to the default VLAN.
         """
-        return self._run_task('conf_trunk_port',
+        return self._run_task(TRUNK_TASK,
                               hostname, vlan_id,
                               switch_port=port,
                               trunked_vlans=trunked_vlans)
